@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 from bot_backend import get_bot_response, process_pdf, remove_pdf_from_memory
 
 app = Flask(__name__)
-app.secret_key = "cyberlaw_secret"
+app.secret_key = os.environ.get('SECRET_KEY', 'cyberlaw_secret')
 
 # Configure upload folder
 UPLOAD_FOLDER = 'uploads'
