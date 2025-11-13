@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cy-Bot - Kerala Cyber Law Assistant</title>
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Font Awesome for Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+body {
+    background-color: #f5f5f5;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+}
+/* Main container */
+.main-container {
+    height: 100vh;
+    padding: 20px;
+}
+/* Chat container styling */
+.chat-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 15px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    margin-bottom: 15px;
+    height: calc(100% - 120px);
+}
+.message {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+}
+.user-message {
+    align-items: flex-end;
+}
+.bot-message {
+    align-items: flex-start;
+}
+.message-bubble {
+    max-width: 75%;
+    padding: 10px 15px;
+    border-radius: 18px;
+    word-wrap: break-word;
+    word-break: break-word;
+}
+.user-bubble {
+    background-color: #007bff;
+    color: white;
+}
+.bot-bubble {
+    background-color: #e9ecef;
+    color: #333;
+}
+/* Chat Sessions Sidebar */
+.chat-sessions-sidebar {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    padding: 15px;
+    height: 100%;
+    overflow-y: auto;
+}
+.chat-list {
+    max-height: calc(100% - 50px);
+    overflow-y: auto;
+}
+.chat-session-item {
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-left: 3px solid transparent;
+    position: relative;
+}
+.chat-session-item:hover {
+    background-color: #f8f9fa;
+}
+.chat-session-item.active {
+    background-color: #e7f1ff;
+    border-left-color: #007bff;
+}
+.chat-session-title {
+    font-weight: 500;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 25px;
+}
+.chat-session-time {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+.delete-session {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    background: none;
+    border: none;
+    color: #dc3545;
+    font-size: 0.8rem;
+    padding: 2px 5px;
+}
+.chat-session-item:hover .delete-session {
+    opacity: 1;
+}
+/* PDF Panel Styling */
+.pdf-panel {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    padding: 15px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+.pdf-viewer {
+    flex-grow: 1;
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    display: none;
+}
+/* Upload Area Styling */
+.upload-area {
+    border: 2px dashed #ccc;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+.upload-area:hover, .upload-area.active {
+    border-color: #007bff;
+    background-color: #f8f9fa;
+}
+.pdf-info {
+    background-color: #e9ecef;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    display: none;
+}
+.loading-spinner {
+    display: none;
+    text-align: center;
+    padding: 20px;
+    flex-grow: 1;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+/* Disclaimer Styling - Moved to top of chat section */
+.chat-disclaimer {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border-left: 4px solid #dc3545;
+    font-size: 0.75rem;
+    margin-bottom: 15px;
+    line-height: 1.3;
+}
+.chat-disclaimer strong {
+    font-weight: 600;
+}
+/* Header Styling */
+.header-section {
+    margin-bottom: 20px;
+}
+.chat-controls {
+    display: flex;
+    gap: 10px;
+}
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .main-container {
+        height: auto;
+        min-height: 100vh;
+    }
+    .chat-sessions-sidebar {
+        height: 200px;
+        margin-bottom: 20px;
+    }
+    .pdf-panel {
+        height: 400px;
+        margin-top: 20px;
+    }
+    .chat-disclaimer {
+        font-size: 0.7rem;
+        padding: 6px 10px;
+    }
+}
+</style>
+</head>
+<body>
+<div class="container-fluid main-container">
+    <!-- Header Section -->
+    <div class="row header-section">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1><i class="fas fa-robot text-primary"></i> Cy-Bot - Kerala Cyber Law Assistant</h1>
+                <div class="chat-controls">
+                    <button id="newChatBtn" class="btn btn-outline-primary">
+                        <i class="fas fa-plus"></i> New Chat
+                    </button>
+                    <button id="clearBtn" class="btn btn-outline-danger">
+                        <i class="fas fa-trash"></i> Clear Chat
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Section -->
+    <div class="row h-100" style="min-height: 70vh;">
+        <!-- Left: Chat Sessions Sidebar -->
+        <div class="col-md-3 col-lg-2">
+            <div class="chat-sessions-sidebar">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Chat Sessions</h6>
+                    <span class="badge bg-primary" id="sessionCount">0</span>
+                </div>
+                <div class="chat-list" id="chatList">
+                    <!-- Chat sessions will be listed here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle: Chat Interface -->
+        <div class="col-md-5 col-lg-6">
+            <div class="d-flex flex-column h-100">
+                <!-- Disclaimer moved here - top of chat section -->
+                <div class="chat-disclaimer">
+                    <strong>Disclaimer:</strong> This AI assistant provides general information about cyber laws in Kerala and is not a substitute for professional legal advice. The information provided may not be comprehensive or up-to-date. For specific legal issues, please consult with a qualified legal professional.
+                </div>
+                
+                <div class="chat-container" id="chatContainer">
+                    <!-- Chat messages will be displayed here -->
+                </div>
+                <div class="input-group mt-2">
+                    <input type="text" id="messageInput" class="form-control" placeholder="Ask about Kerala cyber laws..." autocomplete="off">
+                    <button class="btn btn-primary" id="sendBtn">
+                        <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: PDF Upload & Viewer -->
+        <div class="col-md-4 col-lg-4">
+            <div class="pdf-panel">
+                <h5 class="mb-3"><i class="fas fa-file-pdf text-danger"></i> PDF Reference</h5>
+                
+                <!-- Area to upload a new PDF -->
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-3"></i>
+                    <p class="mb-1">Click to upload or drag and drop</p>
+                    <p class="text-muted small">PDF files only (MAX 10MB)</p>
+                    <input type="file" id="pdfInput" accept="application/pdf" style="display: none;">
+                </div>
+                
+                <!-- Info bar for the uploaded PDF -->
+                <div class="pdf-info" id="pdfInfo">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-file-pdf text-danger"></i>
+                            <span id="pdfName" class="ms-2"></span>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger" id="removePdf">
+                            <i class="fas fa-times"></i> Remove
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Loading indicator while processing -->
+                <div class="loading-spinner" id="pdfLoading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Processing PDF...</span>
+                    </div>
+                    <p class="mt-2">Processing PDF, please wait...</p>
+                </div>
+                
+                <!-- Iframe to display the uploaded PDF -->
+                <iframe class="pdf-viewer" id="pdfViewer"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Console log to confirm script is running
+    console.log("Cy-Bot script loaded successfully.");
+
+    // Get all necessary DOM elements
+    const chatContainer = document.getElementById('chatContainer');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const newChatBtn = document.getElementById('newChatBtn');
+    const uploadArea = document.getElementById('uploadArea');
+    const pdfInput = document.getElementById('pdfInput');
+    const pdfInfo = document.getElementById('pdfInfo');
+    const pdfViewer = document.getElementById('pdfViewer');
+    const pdfName = document.getElementById('pdfName');
+    const removePdf = document.getElementById('removePdf');
+    const pdfLoading = document.getElementById('pdfLoading');
+    const chatList = document.getElementById('chatList');
+    const sessionCount = document.getElementById('sessionCount');
+
+    let currentPdfId = null;
+    let currentPdfUrl = null;
+    let currentSessionId = null;
+
+    // Load initial chat history and sessions on page load
+    loadChatHistory();
+    loadChatSessions();
+
+    // Event listeners for chat functionality
+    sendBtn.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+    clearBtn.addEventListener('click', clearChat);
+    newChatBtn.addEventListener('click', newChat);
+
+    // Event listeners for PDF upload functionality
+    uploadArea.addEventListener('click', () => pdfInput.click());
+    pdfInput.addEventListener('change', handlePdfUpload);
+    removePdf.addEventListener('click', removeCurrentPdf);
+
+    // Drag and drop events for the upload area
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('active');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('active');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('active');
+
+        if (e.dataTransfer.files.length) {
+            pdfInput.files = e.dataTransfer.files;
+            handlePdfUpload();
+        }
+    });
+
+    function sendMessage() {
+        const message = messageInput.value.trim();
+        if (!message) return;
+
+        addMessage('user', message);
+        messageInput.value = '';
+
+        // Show a loading indicator in the chat
+        const loadingId = 'loading-' + Date.now();
+        addMessage('bot', '<div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Loading...</span></div> Thinking...', loadingId);
+
+        // Send message to backend
+        fetch('/get_response', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: message,
+                has_pdf: currentPdfId !== null,
+                timestamp: new Date().toISOString()
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            removeMessage(loadingId);
+            addMessage('bot', data.bot);
+            loadChatSessions();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            removeMessage(loadingId);
+            addMessage('bot', 'Sorry, something went wrong. Please try again.');
+        });
+    }
+
+    function addMessage(sender, content, id = null) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}-message`;
+        if (id) messageDiv.id = id;
+
+        const bubbleDiv = document.createElement('div');
+        bubbleDiv.className = `message-bubble ${sender}-bubble`;
+        bubbleDiv.innerHTML = content;
+
+        messageDiv.appendChild(bubbleDiv);
+        chatContainer.appendChild(messageDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function removeMessage(id) {
+        const message = document.getElementById(id);
+        if (message) message.remove();
+    }
+
+    function clearChat() {
+        if (confirm('Are you sure you want to clear the chat? This will permanently delete this chat session and remove all uploaded PDFs.')) {
+            fetch('/clear', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' } 
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'cleared') {
+                    chatContainer.innerHTML = '';
+                    
+                    // Reset PDF UI
+                    pdfInfo.style.display = 'none';
+                    pdfViewer.style.display = 'none';
+                    uploadArea.style.display = 'flex';
+                    pdfInput.value = '';
+                    currentPdfId = null;
+                    currentPdfUrl = null;
+                    
+                    addMessage('bot', 'Chat cleared. How can I help you with Kerala cyber laws today?');
+                    loadChatSessions();
+                }
+            })
+            .catch(error => {
+                console.error('Error clearing chat:', error);
+                alert('Error clearing chat. Please try again.');
+            });
+        }
+    }
+
+    function newChat() {
+        if (confirm('Start a new chat? Your current conversation will be saved, and you\'ll start a fresh chat.')) {
+            fetch('/new_chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    timestamp: new Date().toISOString()
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'new_chat_created') {
+                    chatContainer.innerHTML = '';
+                    currentPdfId = null;
+                    currentPdfUrl = null;
+
+                    // Reset PDF UI
+                    pdfInfo.style.display = 'none';
+                    pdfViewer.style.display = 'none';
+                    uploadArea.style.display = 'flex';
+                    pdfInput.value = '';
+
+                    addMessage('bot', 'Starting new chat. How can I help you with Kerala cyber laws?');
+                    loadChatSessions();
+                }
+            })
+            .catch(error => {
+                console.error('Error creating new chat:', error);
+                alert('Error creating new chat. Please try again.');
+            });
+        }
+    }
+
+    function loadChatHistory() {
+        fetch('/get_history')
+        .then(response => response.json())
+        .then(data => {
+            if (data.history && data.history.length > 0) {
+                data.history.forEach(item => {
+                    addMessage('user', item.user);
+                    addMessage('bot', item.bot);
+                });
+            } else {
+                addMessage('bot', 'Hello! I\'m Cy-Bot, your assistant for Kerala cyber laws. How can I help you today?');
+            }
+        })
+        .catch(error => console.error('Error loading history:', error));
+    }
+
+    function loadChatSessions() {
+        fetch('/get_sessions')
+        .then(response => response.json())
+        .then(data => {
+            if (data.sessions) {
+                renderChatSessions(data.sessions);
+                sessionCount.textContent = Object.keys(data.sessions).length;
+            }
+        })
+        .catch(error => console.error('Error loading sessions:', error));
+    }
+
+    function renderChatSessions(sessions) {
+        chatList.innerHTML = '';
+        
+        if (Object.keys(sessions).length === 0) {
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'text-muted text-center py-3';
+            emptyMessage.textContent = 'No chat sessions yet';
+            chatList.appendChild(emptyMessage);
+            return;
+        }
+
+        Object.keys(sessions).forEach(sessionId => {
+            const session = sessions[sessionId];
+            const sessionItem = document.createElement('div');
+            sessionItem.className = 'chat-session-item';
+            sessionItem.dataset.sessionId = sessionId;
+
+            const sessionTitle = document.createElement('div');
+            sessionTitle.className = 'chat-session-title';
+            sessionTitle.textContent = session.title || 'Chat Session';
+
+            const sessionTime = document.createElement('div');
+            sessionTime.className = 'chat-session-time';
+            if (session.timestamp) {
+                const date = new Date(session.timestamp);
+                sessionTime.textContent = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            } else {
+                sessionTime.textContent = 'Recent chat';
+            }
+
+            // Add delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-session';
+            deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
+            deleteBtn.title = 'Delete this chat session';
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteChatSession(sessionId);
+            });
+
+            sessionItem.appendChild(sessionTitle);
+            sessionItem.appendChild(sessionTime);
+            sessionItem.appendChild(deleteBtn);
+            sessionItem.addEventListener('click', () => loadChatSession(sessionId));
+
+            chatList.appendChild(sessionItem);
+        });
+    }
+
+    function deleteChatSession(sessionId) {
+        if (confirm('Are you sure you want to permanently delete this chat session?')) {
+            fetch('/delete_session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sessionId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadChatSessions();
+                    // If we deleted the current session, clear the chat
+                    if (sessionId === currentSessionId) {
+                        chatContainer.innerHTML = '';
+                        addMessage('bot', 'Session deleted. Starting fresh chat.');
+                    }
+                } else {
+                    alert('Error deleting session: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting session:', error);
+                alert('Error deleting session. Please try again.');
+            });
+        }
+    }
+
+    function loadChatSession(sessionId) {
+        fetch('/load_chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: sessionId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currentSessionId = sessionId;
+                chatContainer.innerHTML = '';
+                currentPdfId = null;
+                currentPdfUrl = null;
+
+                // Reset PDF UI
+                pdfInfo.style.display = 'none';
+                pdfViewer.style.display = 'none';
+                uploadArea.style.display = 'flex';
+                pdfInput.value = '';
+
+                if (data.history && data.history.length > 0) {
+                    data.history.forEach(item => {
+                        addMessage('user', item.user);
+                        addMessage('bot', item.bot);
+                    });
+                } else {
+                    addMessage('bot', 'Chat session loaded. How can I help you with Kerala cyber laws?');
+                }
+
+                // Update active session in the sidebar
+                document.querySelectorAll('.chat-session-item').forEach(item => {
+                    item.classList.remove('active');
+                    if (item.dataset.sessionId === sessionId) {
+                        item.classList.add('active');
+                    }
+                });
+            } else {
+                alert('Error loading chat session: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading chat session:', error);
+            alert('Error loading chat session. Please try again.');
+        });
+    }
+
+    function handlePdfUpload() {
+        if (pdfInput.files.length === 0) return;
+
+        const file = pdfInput.files[0];
+
+        if (file.type !== 'application/pdf') {
+            alert('Please upload a PDF file.');
+            return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            alert('File size must be less than 10MB.');
+            return;
+        }
+
+        // Update UI to show loading state
+        uploadArea.style.display = 'none';
+        pdfLoading.style.display = 'flex';
+
+        const formData = new FormData();
+        formData.append('pdf', file);
+
+        fetch('/upload_pdf', { method: 'POST', body: formData })
+        .then(response => response.json())
+        .then(data => {
+            pdfLoading.style.display = 'none';
+
+            if (data.success) {
+                currentPdfId = data.pdf_id;
+                currentPdfUrl = data.pdf_url;
+
+                // Update UI to show uploaded PDF
+                pdfName.textContent = file.name;
+                pdfInfo.style.display = 'block';
+                pdfViewer.style.display = 'block';
+                pdfViewer.src = data.pdf_url;
+
+                addMessage('bot', 'PDF uploaded successfully! Processing in background. You can start asking questions while it processes.');
+            } else {
+                uploadArea.style.display = 'flex';
+                alert('Error uploading PDF: ' + data.error);
+            }
+        })
+        .catch(error => {
+            pdfLoading.style.display = 'none';
+            uploadArea.style.display = 'flex';
+            console.error('Error:', error);
+            alert('Error uploading PDF. Please try again.');
+        });
+    }
+
+    function removeCurrentPdf() {
+        if (!currentPdfId) return;
+
+        fetch('/remove_pdf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pdf_id: currentPdfId }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currentPdfId = null;
+                currentPdfUrl = null;
+
+                // Reset UI to initial state
+                pdfInfo.style.display = 'none';
+                pdfViewer.style.display = 'none';
+                uploadArea.style.display = 'flex';
+                pdfInput.value = '';
+
+                addMessage('bot', 'PDF reference removed. I will now answer questions based on the standard knowledge base only.');
+            }
+        })
+        .catch(error => console.error('Error removing PDF:', error));
+    }
+});
+</script>
+</body>
+</html>
