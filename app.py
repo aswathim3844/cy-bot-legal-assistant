@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify, session, send_from_directory
+from flask_cors import CORS
 import os
 import uuid
 import json
@@ -6,6 +7,7 @@ from werkzeug.utils import secure_filename
 from bot_backend import get_bot_response, process_pdf, remove_pdf_from_memory
 
 app = Flask(__name__)
+CORS(app)
 app.secret_key = os.environ.get('SECRET_KEY', 'cyberlaw_secret')
 
 # Configure upload folder
@@ -41,7 +43,18 @@ def save_chat_sessions(sessions):
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+@app.route('/')
+def home():
+    return render_template('index.html')
 
+@app.route('/chat',methods=['POST'])
+def chat():
+    data = request.json
+    message = data.get('message','')
+
+    response =f"Legal bot recieved:{message}"
+    return jsonify({'response':response})
+    
 @app.route("/")
 def index():
     # Initialize session ID if it doesn't exist
@@ -236,4 +249,4 @@ def uploaded_file(filename):
 # Add this to the BOTTOM of your app.py
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    
